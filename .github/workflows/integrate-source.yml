@@ -1,0 +1,83 @@
+name: Integrate Mindustry source + Shattered Star
+
+# 把完整 Mindustry v160.7 源码（含二进制贴图/音频）与源码级内置的
+# 碎星计划一起写入本仓库。上游二进制无法通过文本写入通道搬运，
+# 因此由 CI 用 GITHUB_TOKEN 完成 clone + 集成 + push。
+# 用 GITHUB_TOKEN 产生的 push 不会触发新的 workflow run，天然无循环。
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - '.github/workflows/integrate-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: integrate-source
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch pristine Mindustry v160.7
+        run: |
+          set -e
+          rm -rf /tmp/upstream
+          if ! git clone --depth 1 --branch v160.7 https://github.com/Anuken/Mindustry.git /tmp/upstream; then
+            git clone --depth 1 --branch v160.7 \
+              https://ghfast.top/https://github.com/Anuken/Mindustry.git /tmp/upstream
+          fi
+          echo "上游 commit: $(git -C /tmp/upstream rev-parse HEAD)"
+          echo "上游文件数: $(find /tmp/upstream -path /tmp/upstream/.git -prune -o -type f -print | wc -l)"
+
+      - name: Fetch Shattered Star mod source and assets
+        run: |
+          set -e
+          rm -rf /tmp/modrepo
+          git clone --depth 1 \
+            https://github.com/wzk01021003/Mindustry-Project-Shattered-Star.git /tmp/modrepo
+          echo "模组 Java: $(find /tmp/modrepo/src -name '*.java' | wc -l)"
+          echo "模组 assets: $(find /tmp/modrepo/assets -type f | wc -l)"
+
+      - name: Integrate into source tree
+        run: python3 scripts/integrate.py /tmp/upstream /tmp/modrepo "$GITHUB_WORKSPACE"
+
+      - name: Verify integrated structure
+        run: |
+          set -e
+          test -f core/src/mindustry/mod/Mods.java
+          test -f core/assets/shattered-star.zip
+          test -f core/src/project/ShatteredStarMod.java
+          test -f SHATTERED_STAR.md
+          grep -q 'Project Shattered Star: source-integrated built-in mod' \
+            core/src/mindustry/mod/Mods.java
+          unzip -l core/assets/shattered-star.zip \
+            | grep -E 'mod.hjson|bundles/bundle.properties|content/planets/serpulos.json'
+          python3 -c "import zipfile; z=zipfile.ZipFile('core/assets/shattered-star.zip'); print('zip entries:', len(z.namelist()))"
+          echo "core Java 文件数: $(find core/src -name '*.java' | wc -l)"
+          echo "内置 Mod Java 文件数: $(find core/src/project -name '*.java' | wc -l)"
+
+      - name: Commit the full source tree
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # -f：上游 .gitignore 可能忽略 *.zip，强制纳入内置资源
+          git add -A -f
+          if git diff --cached --quiet; then
+            echo "无变更，跳过提交"
+          else
+            git commit -m "Source-integrate Mindustry v160.7 + Project Shattered Star [skip ci]"
+            git push origin "HEAD:${{ github.ref_name }}"
+            echo "已推送: $(git rev-parse HEAD)"
+          fi
+          echo "=== 仓库文件统计 ==="
+          git ls-files | wc -l
