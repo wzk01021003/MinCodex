@@ -1,0 +1,38 @@
+NOTICE — Mindustry: Project Shattered Star (source-integrated fork)
+===================================================================
+
+本仓库是 Anuken/Mindustry 的 GPL-3.0 衍生作品，把《碎星计划》
+(Project Shattered Star) 模组直接集成进游戏源码。各组件版权与许可如下：
+
+1. Mindustry 游戏本体 (core/, desktop/, server/, annotations/, assets/ ...)
+   版本：v160.7 (Build 160.7)
+   来源：https://github.com/Anuken/Mindustry
+   许可：GNU General Public License v3.0 (GPL-3.0)，全文见 LICENSE
+   版权：Anuken 及 Mindustry 贡献者
+
+2. Arc 引擎库（Gradle 依赖，非本仓库内源码）
+   来源：https://github.com/Anuken/Arc
+   许可：GPL-3.0（见其仓库 LICENSE）
+
+3. Project Shattered Star / 碎星计划 模组内容
+   位置：core/src/project/** （Java 类）
+         core/assets/shattered-star.zip （贴图、音频、内容 JSON、JS、语言包）
+   来源：https://github.com/wzk01021003/Mindustry-Project-Shattered-Star
+   作者：A4PAPER (wzk01021003)
+   版本：0.2.0
+
+4. 源码级集成补丁
+   位置：core/src/mindustry/mod/Mods.java 中标注
+         "Project Shattered Star: source-integrated built-in mod" 的代码块
+   说明：在引擎 Mods.load() 里注册内置 LoadedMod，使游戏本体自带模组内容，
+         运行时不再加载外部 mod jar。
+   许可：作为 GPL-3.0 衍生作品的一部分，同样适用 GPL-3.0
+
+5. 内置 JRE（仅用于二进制分发包，不在本源码仓库内）
+   Eclipse Temurin JRE 17：GPL-2.0 with Classpath Exception，
+   许可文本随分发包保留于 jre/legal/。
+
+分发本作品或其二进制时，必须随附 LICENSE、NOTICE、SOURCES.md，
+并提供对应源码获取方式；不得对 GPL-3.0 覆盖的部分附加额外限制。
+
+本仓库为非官方粉丝衍生项目，与 Anuken / Mindustry 官方无关。
